@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Сборка: dotnet build -c Release -p:RWDir=/путь/к/игре  (нужны DLL игры, в репозитории их нет) -->
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>OpiPerf</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <Deterministic>true</Deterministic>
+    <RWDir Condition="'$(RWDir)' == ''">$(HOME)/Games/RainWorld-ARM/game</RWDir>
+    <M>$(RWDir)/RainWorld_Data/Managed</M>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="$(M)/Assembly-CSharp.dll" Private="false" />
+    <Reference Include="$(M)/UnityEngine.dll" Private="false" />
+    <Reference Include="$(M)/UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(M)/UnityEngine.IMGUIModule.dll" Private="false" />
+    <Reference Include="$(M)/UnityEngine.InputLegacyModule.dll" Private="false" />
+    <Reference Include="$(M)/UnityEngine.UI.dll" Private="false" />
+    <Reference Include="$(M)/UnityEngine.TextRenderingModule.dll" Private="false" />
+    <Reference Include="$(RWDir)/BepInEx/core/BepInEx.dll" Private="false" />
+  </ItemGroup>
+</Project>

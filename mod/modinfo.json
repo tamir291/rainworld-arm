@@ -1,0 +1,10 @@
+{
+	"id": "opiperf",
+	"name": "OpiPerf (ARM/SBC speedup)",
+	"version": "0.3.0",
+	"authors": "rainworld-arm contributors",
+	"description": "Render-scale, FPS counter and debug commands for running Rain World on weak ARM boards. F7/F8 render scale, F9 FPS counter.",
+	"requirements": [],
+	"requirements_names": [],
+	"checksum_override_version": false
+}

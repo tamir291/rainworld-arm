@@ -1,0 +1,4 @@
+vk-layer/*.so
+mod/OpiPerf/bin/
+mod/OpiPerf/obj/
+*.log

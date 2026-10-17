@@ -1,0 +1,57 @@
+#!/bin/bash
+# Rain World (Windows build) via box64 + Wine 10.0 (x86_64 WoW64).
+#
+# Default — GPU mode: wined3d's Vulkan renderer + VK_LAYER_OPI_fakefeatures
+# (reports GS/tess/multiViewport so wined3d exposes D3D feature level 11, and sanitizes the
+# commands so the driver never sees them — made for PowerVR BXM).
+# OpiPerf mod: F7/F8 render scale, F9 FPS counter.
+#
+# rainworld --cpu — software fallback (llvmpipe): 1/4 internal resolution, window = half the
+# screen, and the desktop is scaled down 2x while playing (xrandr --scale-from; the X server
+# upscales on the GPU, which keeps full-screen passes off the CPU).
+#
+# Paths come from ~/.config/rainworld-arm.conf (written by install.sh).
+RW_GAME=$HOME/Games/RainWorld-ARM/game
+RW_WINE=$HOME/Games/RainWorld-ARM/wine10
+RW_BOX64=box64
+RW_LAYER_DIR=          # folder with the layer manifest (empty = standard Vulkan layer search paths)
+RW_MEMMAX=3300M        # cgroup memory cap: the game gets killed instead of the board thrashing
+[ -f "$HOME/.config/rainworld-arm.conf" ] && . "$HOME/.config/rainworld-arm.conf"
+
+export WINEPREFIX=${WINEPREFIX:-$HOME/.wine-rainworld}
+export WINEDEBUG=${WINEDEBUG:--all}
+export WINEDLLOVERRIDES="winhttp=n,b;mscoree,mshtml="   # winhttp = BepInEx doorstop
+export BOX64_LOG=${BOX64_LOG:-0}
+export DISPLAY=${DISPLAY:-:0}
+
+if [ ! -d "$WINEPREFIX/drive_c" ]; then
+    echo "First run: creating the Wine prefix (1-2 minutes)..."
+    "$RW_BOX64" "$RW_WINE/bin/wine" wineboot -i >/dev/null 2>&1
+fi
+
+OUT=$(xrandr --current | awk '/ connected/{print $1; exit}')
+MODE=$(xrandr --current | awk '/\*/{print $1; exit}')
+restore_screen() {
+    xrandr --output "$OUT" --transform none 2>/dev/null
+    xrandr --output "$OUT" --mode "$MODE" 2>/dev/null
+}
+
+if [ "${1:-}" = "--cpu" ]; then
+    shift
+    W=${MODE%x*}; H=${MODE#*x}
+    export OPIPERF_LOWRES=1 OPIPERF_WIN="$((W / 2))x$((H / 2))"
+    export LP_NUM_THREADS=${LP_NUM_THREADS:-6}
+    trap restore_screen EXIT INT TERM
+    xrandr --output "$OUT" --scale-from "$OPIPERF_WIN" --filter nearest
+else
+    export WINE_D3D_CONFIG="renderer=vulkan"
+    export VK_INSTANCE_LAYERS=VK_LAYER_OPI_fakefeatures
+    [ -n "$RW_LAYER_DIR" ] && export VK_ADD_LAYER_PATH="$RW_LAYER_DIR"
+fi
+
+cd "$RW_GAME" || exit 1
+systemd-run --user --scope -q -p MemoryMax="$RW_MEMMAX" \
+    "$RW_BOX64" "$RW_WINE/bin/wine" RainWorld.exe "$@"
+# wine may return before the game exits — wait for it
+sleep 5
+while pgrep -f "[R]ainWorld.exe" >/dev/null; do sleep 2; done
